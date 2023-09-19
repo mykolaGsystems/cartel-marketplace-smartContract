@@ -7,7 +7,8 @@ use near_sdk::{log, env, ext_contract, Gas, near_bindgen,
                 AccountId, Balance, Promise, PromiseError, Timestamp, require};
 use near_sdk::collections::UnorderedMap;
 use serde_json::to_string;
-use near_sdk::serde::{Deserialize, Serialize};
+use serde::{ Serialize, Deserialize };
+use std::str::FromStr;
 
 extern crate aes;
 extern crate base64;
@@ -31,7 +32,6 @@ use near_sdk::json_types::{ValidAccountId, U128};
 
 // use reqwest::blocking::Client;
 
-const API_KEY: &str = "GUCJKsqfFSaPxDVXWfSLAh512g8JJdn10iMQkOV5";
 const ONE_NEAR: u128 = 1_000_000_000_000_000_000_000_000;
 const MINIMUM_ORDER: Balance = 1_000_000_000_000_000_000_000_000;
 pub const XCC_GAS: Gas = Gas(20_000_000_000_000);
@@ -41,7 +41,8 @@ const ASSET_ID_REF: &str = "wrap.testnet";
 #[derive(BorshDeserialize, BorshSerialize,)]
 pub struct Contract{
     owner_id: AccountId,
-    stock: UnorderedMap<String, u64>,
+    marketplace_stock: UnorderedMap<String, UnorderedMap<String, StoreItem>>,
+    delivery_regions: UnorderedMap<String, DeliveryRegion>, 
     user_basket: Option<Basket>,
     last_near_price: Option<Balance>,
 }
@@ -58,7 +59,30 @@ struct PurchaseEvent {
 struct Basket {
     account_id: AccountId,
     message: String,
+    region_code: String,
     basket_items: Vec<(String, u16)>
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+pub struct StoreItem {
+    // grind: String,
+    // grind: Vec<String>,
+    prices: HashMap<String, f64>,
+}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+struct DeliveryRegion {
+    region_code: String,
+    grams_500: UnorderedMap<String,f64>,
+    grams_1000: UnorderedMap<String,f64>,
+    grams_2000: UnorderedMap<String,f64>,
+}
+
+#[derive(BorshSerialize, BorshDeserialize)]
+struct BasketItem {
+    id: String,
+    grind: String,
+    grams: String,
 }
 
 #[ext_contract(ext_get_asset)]
@@ -69,13 +93,19 @@ pub trait PriceChecker {
 // Define the default, which automatically initializes the contract
 impl Default for Contract{
     fn default() -> Self {
-        let mut item_shop = UnorderedMap::new(b"r".to_vec());
-        item_shop.insert(&"1".to_string(), &1);
-        item_shop.insert(&"2".to_string(), &2);
+
+        // Fill in the Store with the items
+        let item_shop = UnorderedMap::new(b"r".to_vec());
+        let regions: UnorderedMap<String, DeliveryRegion> = UnorderedMap::new(b"r".to_vec());
+        // item_shop.insert(&"1".to_string(), &1);
+        // item_shop.insert(&"2".to_string(), &2);
+
+        // Fill in the store with the regions and the bands
 
         Self {
             owner_id: env::current_account_id(),
-            stock: item_shop,
+            marketplace_stock: item_shop,
+            delivery_regions: regions,
             user_basket: None,
             last_near_price: Some(ONE_NEAR),
         }
@@ -83,8 +113,29 @@ impl Default for Contract{
 }
 // Implement the contract structure
 #[near_bindgen]
-impl Contract{
+impl Contract {
 
+    // Update the store items:
+    pub fn update_store(&mut self, items: Vec<(String, Vec<(String, StoreItem)>)>) {
+
+        require!(
+            env::predecessor_account_id() == self.owner_id, 
+            "Error; Only owner of the smart contract is able to update the store"
+        );
+
+//     marketplace_stock: UnorderedMap<String, UnorderedMap<String, StoreItem>>,
+
+        for item in items {
+            let item_id: String = item.0;
+            let mut item_options: UnorderedMap<String, StoreItem> = UnorderedMap::new(b"r".to_vec()); 
+            for item_grind in item.1 {
+                item_options.insert(&item_grind.0, &item_grind.1);
+            };
+            self.marketplace_stock.insert(&item_id, &item_options);
+        };
+    }
+
+    // Purchase Event
     #[payable]
     pub fn confirm_purchase(&mut self, encoded_message: String, items: Vec<(String, u16)> ){
 
@@ -99,8 +150,20 @@ impl Contract{
             "Basket is empty"
         );
 
+        // Check whether the Delivery code is legit
+        let delivery_region = Self::region_check(&encoded_message);
+        require!(
+            if let Some(region) = self.delivery_regions.get(&delivery_region) {
+                matches!(region, DeliveryRegion)
+            } else {
+                false
+            },
+            "[Error] The delivery region is wrong or not supported"
+        );
+        
         let basket = Basket {
             account_id: env::predecessor_account_id(),
+            region_code: delivery_region,
             message: encoded_message,
             basket_items: items,
         };
@@ -110,7 +173,6 @@ impl Contract{
         let call_contract: AccountId = "priceoracle.testnet".parse().unwrap();
         let deposit_amount = env::attached_deposit();
 
-  
         ext_get_asset::ext(call_contract)
             .get_asset(ASSET_ID_REF.to_string())
             .then(
@@ -158,19 +220,40 @@ impl Contract{
 
         self.last_near_price = Some(near_price);
 
+        // Get the current User Basket
         let basket = self.user_basket.as_ref().unwrap();
 
         let mut map: HashMap<String, f64> = HashMap::new();
 
         for (key, count) in basket.basket_items.clone().into_iter() {
+
+            let item_params: Vec<&str> = key.split("_").collect();
+
+            let item = BasketItem {
+                id: item_params[0].to_string(),
+                grind: item_params[1].to_string(),
+                // grams: f64::from_str(item_params[2]).unwrap(), 
+                grams: item_params[2].to_string(),
+            };
+
             // log!(" For loop Elements: {} {}", key, count );
-            if let Some(item_price) = self.stock.get(&key) {
-                let item_price_f64 = item_price as f64;
-                let item_priceNEAR: f64 = item_price_f64 / near_price_f64;
-                log!("Item {} Cost in NEAR: {}", &key, &item_priceNEAR);
-                let item_total = (count.clone() as f64) * item_priceNEAR;
-                map.insert(key.clone(), item_total.clone());
-                totalInNEAR += item_total;
+            // if let Some(item_price) = self.marketplace_stock.get(&item.id) {
+            if let Some(item_grind) = self.marketplace_stock.get(&item.id) { 
+                if let Some(item_prices) = item_grind.get(&item.grind) {
+                    require!(item_prices.prices.contains_key(&item.grams), "Parameters are not valid");
+                    
+                    let item_price: f64 = (item_prices.prices.get(&item.grams).unwrap()).clone();
+                    let item_price_near: f64 = item_price / near_price_f64;
+                    log!("Item {} Cost in NEAR: {}", &key, &item_price_near);
+                    let item_total = (count.clone() as f64) * item_price_near;
+                    map.insert(key.clone(), item_total.clone());
+                    totalInNEAR += item_total;
+                }   
+               
+                // let item_price_near: f64 = item_price_f64 / near_price_f64;
+                // log!("Item {} Cost in NEAR: {}", &key, &item_price_near);
+                // let item_total = (count.clone() as f64) * item_price_near;
+               
                 // log!(" Item Price: {} Item:Total {}", item_price, item_total );
             };
         };
@@ -208,6 +291,26 @@ impl Contract{
     fn parse_NEAR(token: f64, decimals: u32) -> u128 {
         (token * 10f64.powi(decimals as i32)) as u128
     }
+
+    #[private]
+    fn region_check(input: &String) -> String {
+        let chars = input.chars();
+        let char_vector: Vec<char> = chars.collect();
+        let second_element = char_vector.get(1);
+        let last_element = char_vector.last();
+
+        let result = match (second_element, last_element) {
+            (Some(second), Some(last)) => format!("{}{}", second, last),
+            _ => String::new(), // Handle the case where one of the elements is not found
+        };
+        result
+    }
+
+    // #[private]
+    // fn item_extract_options(input: String){
+    //     let parts: Vec<&str> = input.split("_").collect();
+    // }
+
 
     // #[private]
     // fn calculate_basket(mut &self, items: Vec<(String, u16)> ){
@@ -262,10 +365,7 @@ impl Contract{
 
         // self.user_basket = Some(basket);
 
-        
-
         // Self::view_near_price(self,ASSET_ID_REF.to_string());
-
 
         // let near_price = Self::view_near_price(self, asset_id_ref); //1.98123123
         // log!("NEAR Price {}", env::promise_result(near_price));
