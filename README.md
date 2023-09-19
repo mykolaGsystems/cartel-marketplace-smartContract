@@ -4,8 +4,13 @@ near-blank-project
 This app was initialized with [create-near-app]
 
 
+
 Quick Start
 ===========
+
+Build the cargo file with the wasm32 format:
+
+    cargo build --target wasm32-unknown-unknown --release
 
 If you haven't installed dependencies during setup:
 
