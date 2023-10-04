@@ -12,7 +12,9 @@
     "postinstall": "echo no frontend && echo rs tests && echo rs contract"
   },
   "devDependencies": {
-    "near-cli": "^3.3.0"
+    "near-cli": "^3.4.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "near-api-js": "^2.1.4"
+  }
 }
