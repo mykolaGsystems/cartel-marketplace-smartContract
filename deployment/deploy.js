@@ -45,7 +45,7 @@ const delivery_options = [
     {
         "region" : "EU",
         "grams_250"  : { "0" : 18.025},
-        "grams_500"  : { "0" : 21.7 },
+        "grams_500"  : { "0" : 21.70 },
         "grams_1000" : { "0" : 30.45 },
         "grams_2000" : { "0" : 47.95 },
         
@@ -77,9 +77,8 @@ const items = [
  
 (async () => {
     const nearConnection = await connect(connectionConfig);
-    const marketplaceAccount = await nearConnection.account("m6.hugebobadev.testnet");
-    const masterAccount = "m6.hugebobadev.testnet"
-    // const masterAccount = await nearConnection.account("m2.hugebobadev.testnet");
+    const marketplaceAccount = await nearConnection.account("m20.hugebobadev.testnet");
+    const masterAccount = "m20.hugebobadev.testnet"
 
     //Deploy && Setup Contract
 
@@ -88,30 +87,30 @@ const items = [
 
     const marketplaceContract = new Contract(marketplaceAccount, masterAccount, {
 		viewMethods: ["view_store", "view_delivery_rates"],
-		changeMethods: ["insert_marketplace_item", "update_delivery_regions", "reset_store"],
+		changeMethods: ["insert_marketplace_item", "insert_delivery_regions", "reset_store"],
 	});
 
-    // for (let i = 0; i< 4; i++) {
-    //     // console.log(delivery_options[i])
-    //     await marketplaceContract.update_delivery_regions(
-    //         { args: 
-    //             { 
-    //                 region_code: delivery_options[i].region,  
-    //                 grams_250_price: delivery_options[i].grams_250,
-    //                 grams_500_price: delivery_options[i].grams_500,
-    //                 grams_1000_price: delivery_options[i].grams_1000,
-    //                 grams_2000_price: delivery_options[i].grams_2000,
-    //             } 
-    //         }
-    //     );
-    //     console.log("Marketplace delivery region deployed: ", delivery_options[i].region);
-    // };
+    for (let i = 0; i< delivery_options.length; i++) {
+        // console.log(delivery_options[i])
+        await marketplaceContract.insert_delivery_regions(
+            { args: 
+                { 
+                    region_code: delivery_options[i].region,  
+                    grams_250_price: delivery_options[i].grams_250,
+                    grams_500_price: delivery_options[i].grams_500,
+                    grams_1000_price: delivery_options[i].grams_1000,
+                    grams_2000_price: delivery_options[i].grams_2000,
+                } 
+            }
+        );
+        console.log("Marketplace delivery region deployed: ", delivery_options[i].region);
+    };
 
     console.log("\n Delivery rates has been uploaded! Starting loading the items to the stock... \n");
 
-    // for( let i = 0; i < items.length; i++)  {
-    //     await marketplaceContract.insert_marketplace_item({ args: { item_id : items[i].id, item_name: items[i].name, grinds: items[i].grinds, price: items[i].price } });
-    //     console.log("Marketplace insert of item : ", items[i].name);
-    // }
+    for( let i = 0; i < items.length; i++)  {
+        await marketplaceContract.insert_marketplace_item({ args: { item_id : items[i].id, item_name: items[i].name, grinds: items[i].grinds, price: items[i].price } });
+        console.log("Marketplace insert of item : ", items[i].name);
+    }
     
 })();
