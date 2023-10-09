@@ -5,12 +5,14 @@ use crate::*;
 impl Contract {
 
     // Update the store items:
-    pub fn insert_marketplace_item (&mut self, item_id: String, item_name: String, grinds: Vec<String>, price: HashMap<String, f64>) {
+    pub fn insert_marketplace_item (&mut self, 
+        item_id: String, 
+        item_name: String, 
+        grinds: Vec<String>, 
+        price: HashMap<String, f64>
+    ) {
 
-        require!(
-            env::predecessor_account_id() == self.owner_id, 
-            "Error; Only owner of the smart contract is able to update the store"
-        );
+        self.assert_owner();
 
         require!(
             self.marketplace_stock.get(&item_id).is_none(),
@@ -44,11 +46,8 @@ impl Contract {
         grams_1000_price: HashMap<String,f64>,
         grams_2000_price: HashMap<String,f64>,
     ) {
-        require!(
-            env::predecessor_account_id() == self.owner_id, 
-            "Error; Only owner of the smart contract is able to update the regions"
-        );
 
+        self.assert_owner();
         require!(
             region_code.chars().count() == 2, 
             "[Error] Invalid Region Code. It should be 2 Chars"
@@ -88,6 +87,19 @@ impl Contract {
 
     }
 
+    pub fn confirm_order(&mut self, order_id: String, order_filled: bool) {
+        self.assert_owner();
+
+        if let Some(pending_record) = self.pending_orders.remove(&order_id) {
+            if order_filled {
+                self.fulfilled_orders.insert(&order_id, &pending_record);
+                log!("[INFO] Item with ID {} was marked as fulfilled!", order_id);
+            }
+        } else {
+            log!("[ERROR] Item with ID {} does not exist;", order_id);
+        }
+    }
+
     // View the current state of the marketplace
     pub fn view_store(&self) -> Vec<(String, MarketplaceItem)> {
         self.marketplace_stock.to_vec()
@@ -100,11 +112,31 @@ impl Contract {
 
     // Reset the store
     pub fn reset_store(&mut self) {
+        self.assert_owner();
         self.marketplace_stock.clear();
         log!("The store has been cleared");
     }
 
+    // Reset regions
     pub fn reset_regions(&mut self) {
+        self.assert_owner();
         self.delivery_regions.clear();
+    }
+
+    // View all the current pending orders
+    pub fn view_pending_orders(&self) -> Vec<(String, PurchaseEvent)> {
+        self.pending_orders.to_vec()
+    }
+
+    // View the history of fulfilled orders
+    pub fn view_fulfilled_orders(&self) -> Vec<(String, PurchaseEvent)> {
+        self.fulfilled_orders.to_vec()
+    }
+
+    pub fn assert_owner(&self) {
+        require!(
+            env::predecessor_account_id() == self.owner_id,
+            "[ERROR] Selected Operation requires owners rights's"
+        );
     }
 }

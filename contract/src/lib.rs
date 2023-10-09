@@ -48,7 +48,7 @@ pub struct Contract{
     user_basket: Option<Basket>,
     last_near_price: Option<Balance>,
     pending_orders: UnorderedMap<String, PurchaseEvent>,
-    archived_orders: UnorderedMap<String, PurchaseEvent>,
+    fulfilled_orders: UnorderedMap<String, PurchaseEvent>,
 }
 
 // #[derive(BorshSerialize, BorshDeserialize)]
@@ -70,11 +70,11 @@ pub struct MarketplaceItem {
 
 #[derive(Serialize)]
 #[derive(BorshSerialize, BorshDeserialize, Clone)]
-struct PurchaseEvent {
-    event: String,
-    message: String,
-    account_id: AccountId,
-    items: Vec<(String, f64)>,
+pub struct PurchaseEvent {
+    pub event: String,
+    pub message: String,
+    pub account_id: AccountId,
+    pub items: Vec<(String, f64)>,
 }
 
 #[derive(BorshSerialize, BorshDeserialize)]
@@ -113,7 +113,7 @@ impl Default for Contract{
         // Fill in the Store with the items
         let item_shop: UnorderedMap<String, MarketplaceItem> = UnorderedMap::new(b"a");
         let regions: UnorderedMap<String, DeliveryRegion> = UnorderedMap::new(b"c");
-        let archived_init: UnorderedMap<String, PurchaseEvent> = UnorderedMap::new(b"m");
+        let fulfilled_init: UnorderedMap<String, PurchaseEvent> = UnorderedMap::new(b"m");
         let pending_init: UnorderedMap<String, PurchaseEvent> = UnorderedMap::new(b"d"); 
 
         Self {
@@ -123,7 +123,7 @@ impl Default for Contract{
             user_basket: None,
             last_near_price: Some(ONE_NEAR),
             pending_orders: pending_init, 
-            archived_orders: archived_init, 
+            fulfilled_orders: fulfilled_init, 
         }
     }
 }
@@ -147,20 +147,20 @@ impl Contract {
         );
 
         // Check whether the Delivery code is legit
-        let delivery_region = Self::region_check(&encoded_message);
+        let delivery_region: String = Self::region_check(&encoded_message);
 
-        // require!(
-        //     if let Some(region) = self.delivery_regions.get(&delivery_region) {
-        //         matches!(region, DeliveryRegion)
-        //     } else {
-        //         false
-        //     },
-        //     "[Error] The delivery region is wrong or not supported"
-        // );
+        require!(
+            if let Some(region) = self.delivery_regions.get(&delivery_region) {
+                matches!(region, DeliveryRegion)
+            } else {
+                false
+            },
+            "[Error] The delivery region is wrong or not supported;"
+        );
 
-        log!("[INFO] Creating a basket for the user");
+        log!("[INFO] Creating a basket for the user!");
 
-        let basket = Basket {
+        let basket: Basket = Basket {
             account_id: env::predecessor_account_id(),
             region_code: delivery_region,
             message: encoded_message,
@@ -170,9 +170,9 @@ impl Contract {
         self.user_basket = Some(basket);
 
         let call_contract: AccountId = "priceoracle.testnet".parse().unwrap();
-        let deposit_amount = env::attached_deposit();
+        let deposit_amount: u128 = env::attached_deposit();
 
-        log!("[INFO] Making cross-contract call");
+        log!("[INFO] Making cross-contract call!");
 
         ext_get_asset::ext(call_contract)
             .get_asset(ASSET_ID_REF.to_string())
@@ -317,9 +317,15 @@ impl Contract {
             items: map.into_iter().collect(),
         };
 
-        let last_order_number = self.pending_orders.len();
+        let last_order_number_pending = self.pending_orders.len();
+        let last_order_number_fulfilled = self.fulfilled_orders.len();
+        log!("[INFO] The size of the pendinf arr: {}; The size of the fulfilled arr: {}, New id : {}", &last_order_number_pending, &last_order_number_fulfilled, &last_order_number_pending + &last_order_number_fulfilled);
+        let new_order_id: u64 = last_order_number_pending + last_order_number_fulfilled;
+
+        
+
     
-        let order_id = format!("{}_{}", env::signer_account_id().to_string(), last_order_number.to_string());
+        let order_id = format!("{}_{}", env::signer_account_id().to_string(), new_order_id.to_string());
         //Insert into the pending orders array:
         self.pending_orders.insert(&order_id, &purchase_event);
         log!("[INFO] Order with ID {} has been added!", order_id);
