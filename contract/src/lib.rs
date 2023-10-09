@@ -319,9 +319,13 @@ impl Contract {
 
         let last_order_number_pending = self.pending_orders.len();
         let last_order_number_fulfilled = self.fulfilled_orders.len();
+        log!("[INFO] The size of the pendinf arr: {}; The size of the fulfilled arr: {}, New id : {}", &last_order_number_pending, &last_order_number_fulfilled, &last_order_number_pending + &last_order_number_fulfilled);
+        let new_order_id: u64 = last_order_number_pending + last_order_number_fulfilled;
+
+        
 
     
-        let order_id = format!("{}_{}", env::signer_account_id().to_string(), (last_order_number_pending + last_order_number_fulfilled).to_string());
+        let order_id = format!("{}_{}", env::signer_account_id().to_string(), new_order_id.to_string());
         //Insert into the pending orders array:
         self.pending_orders.insert(&order_id, &purchase_event);
         log!("[INFO] Order with ID {} has been added!", order_id);
