@@ -1,36 +1,24 @@
 // Find all our documentation at https://docs.near.org
 mod models;
 mod store_op;
-
+extern crate aes;
+extern crate base64;
 use crate::models::{Price, Report, AssetEma, Asset, AssetId};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize, };
-use near_sdk::{log, env, ext_contract, Gas, near_bindgen, 
-                AccountId, Balance, Promise, PromiseError, Timestamp, require, BorshStorageKey};
 use near_sdk::collections::unordered_map::UnorderedMap;
-// use near_sdk::collections::vector::Vector;
 use serde_json::to_string;
 use serde::{ Serialize, Deserialize };
 use std::str::FromStr;
-
-extern crate aes;
-extern crate base64;
-
 use aes::cipher::generic_array::{ GenericArray, ArrayLength };
-
-
 use aes::cipher::{ BlockCipher, BlockEncrypt, BlockDecrypt };
 use aes::cipher::generic_array::typenum::{U16, U32};
-// use base64::decode;
-
 use crate::aes::cipher::KeyInit;
-
 use base64::{decode, encode};
-
 use std::collections::HashMap;
-
 use aes::Aes256;
-
 use near_sdk::json_types::{ValidAccountId, U128};
+use near_sdk::{log, env, ext_contract, Gas, near_bindgen, 
+    AccountId, Balance, Promise, PromiseError, Timestamp, require, BorshStorageKey};
 
 // use reqwest::blocking::Client;
 
@@ -51,14 +39,6 @@ pub struct Contract{
     fulfilled_orders: UnorderedMap<String, PurchaseEvent>,
 }
 
-// #[derive(BorshSerialize, BorshDeserialize)]
-// struct FilledOrder {
-//     event: String,
-//     accound_id: AccountId, 
-//     data: String,
-//     purchased_items: Vec<(String, f64)>
-// }
-
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, Serialize)]
 pub struct MarketplaceItem {
@@ -71,10 +51,12 @@ pub struct MarketplaceItem {
 #[derive(Serialize)]
 #[derive(BorshSerialize, BorshDeserialize, Clone)]
 pub struct PurchaseEvent {
+    pub order_id : String, 
+    pub account_id: AccountId,
     pub event: String,
     pub message: String,
-    pub account_id: AccountId,
-    pub items: Vec<(String, f64)>,
+    pub items: Vec<(String, u16)>,
+    pub checkout_cost: f64,
 }
 
 #[derive(BorshSerialize, BorshDeserialize)]
@@ -218,19 +200,18 @@ impl Contract {
         let near_ema: AssetEma = ema[0].clone();
         let near_price: Balance = near_ema.price.unwrap().multiplier;
         let near_price_f64 = Self::u128_to_decimal(near_price.clone(), 8); 
-        log!("NEAR Price in f64: {}", &near_price_f64);
+        log!("[INFO] NEAR Price in f64: {}", &near_price_f64);
 
         self.last_near_price = Some(near_price);
 
         // Get the current User Basket
         let basket = self.user_basket.as_ref().unwrap();
 
-        let mut map: HashMap<String, f64> = HashMap::new();
+        let mut map: HashMap<String, u16> = HashMap::new();
 
         for (key, count) in basket.basket_items.clone().into_iter() {
 
             let item_params: Vec<&str> = key.split("_").collect();
-            // log!("The item was splitted into {:?} elements", &item_params);
 
             let item: BasketItem = BasketItem {
                 id: item_params[0].to_string(),
@@ -242,31 +223,26 @@ impl Contract {
             // Add the total grams
             totalGrams += f64::from_str(item_params[1]).unwrap();
     
-
-            // log!(" For loop Elements: {} {}", key, count );
-            // if let Some(item_price) = self.marketplace_stock.get(&item.id) {
             if let Some(marketplace_item) = self.marketplace_stock.get(&item.id) { 
 
                 if marketplace_item.grinds.iter().any(|i| i== &item.grind) {
 
-                    require!(marketplace_item.price_range.get(&item.grams).is_some(), "Parameters are not valid");
+                    require!(marketplace_item.price_range.get(&item.grams).is_some(), "[ERROR] Selected options are not valid!");
 
                     let item_price: f64 = (marketplace_item.price_range.get(&item.grams).unwrap()).clone();
                     let item_price_near: f64 = item_price / near_price_f64;
-                    log!("Item {} price in NEAR: {}", &item_params[0], &item_price_near);
-                    log!("Count : {}", &count);
-                    let item_total = (count.clone() as f64) / item_price_near;
-                    log!("Item_total : {}", &item_total);
-                    map.insert(key.clone(), item_total.clone());
+                    log!("[INFO][C] Item {} price in NEAR: {};", &item_params[0], &item_price_near);
+                    let item_total = (count.clone() as f64) * item_price_near;
+                    log!("[INFO][C] Item_total : {};", &item_total);
+                    map.insert(key.clone(), count.clone());
                     totalInNEAR += item_total;
-                    
                 };
 
+            } else {
+                panic!("[ERROR] The item with the provided ID does not exist!");
             }
 
         };
-
-        log!("[INFO] Calculation and verification of item cost is complete");
 
         // Get the prices for the deliverues
 
@@ -296,39 +272,40 @@ impl Contract {
             }
         };
 
-        log!("NEAR Price total for delivery: {}; in NEAR: {} ", &totalGramsPrice, &totalGramsPrice / near_price_f64) ;
-        log!("NEAR Price total for items: {}", &totalInNEAR);
+        let totalGramsInNEAR = totalGramsPrice / near_price_f64;
+
+        log!("[INFO][C] NEAR Price total for delivery: {};", &totalGramsInNEAR);
+        log!("[INFO][C] NEAR Price total for items: {};", &totalInNEAR);
     
 
-        let totalCheckoutPrice = &totalGramsPrice + &totalInNEAR;
-        log!("Total checkout price in NEAR: {}", &totalCheckoutPrice);
-        // log!()
-        log!("NEAR Price in Yockto: {}", Self::parse_NEAR(totalCheckoutPrice, 24));
-        //Check for Suffifient Deposit to cover the cost
+        let totalCheckoutPrice = totalGramsInNEAR + totalInNEAR;
+        log!("[INFO][C] Total checkout price in NEAR: {};", &totalCheckoutPrice);
+
         require!(
             env::attached_deposit() >= Self::parse_NEAR(totalCheckoutPrice, 24),
-            "ERR_INSUFFICIENT_NEAR_AMOUNT"
+            "[ERROR] ERR_INSUFFICIENT_NEAR_AMOUNT!"
         );
-
-        let purchase_event = PurchaseEvent {
-            event: "confirmed_purchase".to_string(),
-            message: basket.message.clone(),
-            account_id: env::signer_account_id(),
-            items: map.into_iter().collect(),
-        };
 
         let last_order_number_pending = self.pending_orders.len();
         let last_order_number_fulfilled = self.fulfilled_orders.len();
-        log!("[INFO] The size of the pendinf arr: {}; The size of the fulfilled arr: {}, New id : {}", &last_order_number_pending, &last_order_number_fulfilled, &last_order_number_pending + &last_order_number_fulfilled);
+        // log!("[INFO] The size of the pendinf arr: {}; The size of the fulfilled arr: {}, New id : {}", &last_order_number_pending, &last_order_number_fulfilled, &last_order_number_pending + &last_order_number_fulfilled);
         let new_order_id: u64 = last_order_number_pending + last_order_number_fulfilled;
 
         
-
-    
         let order_id = format!("{}_{}", env::signer_account_id().to_string(), new_order_id.to_string());
+
+        let purchase_event = PurchaseEvent {
+            order_id: order_id.clone(),
+            account_id: env::signer_account_id(),
+            event: "confirmed_purchase".to_string(),
+            message: basket.message.clone(),
+            items: map.into_iter().collect(),
+            checkout_cost: totalCheckoutPrice,
+        };
+
         //Insert into the pending orders array:
         self.pending_orders.insert(&order_id, &purchase_event);
-        log!("[INFO] Order with ID {} has been added!", order_id);
+        log!("[INFO][E] Order with ID {} has been added;", order_id);
 
         let event_json = to_string(&purchase_event).unwrap();
         log!("EVENT_JSON: {}", event_json);
