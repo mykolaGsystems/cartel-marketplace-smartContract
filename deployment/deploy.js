@@ -1,12 +1,16 @@
 const nearAPI = require("near-api-js");
 const { connect, Contract } = nearAPI;
+// const fs = require('fs');
+const { Parser } = require('json2csv');
+const fs = require("fs");
+
+
 
 const { keyStores } = nearAPI;
 const homedir = require("os").homedir();
 const CREDENTIALS_DIR = ".near-credentials";
 const credentialsPath = require("path").join(homedir, CREDENTIALS_DIR);
 const myKeyStore = new keyStores.UnencryptedFileSystemKeyStore(credentialsPath);
-const fs = require("fs");
 
 // Initialize the connection to the NEAR network.
 const connectionConfig = {
@@ -17,6 +21,9 @@ const connectionConfig = {
     helperUrl: "https://helper.testnet.near.org",
     explorerUrl: "https://explorer.testnet.near.org",
 };
+
+// Define the CSV writer with the appropriate header names
+
 
 const encoded_message = "GAutg1WvCnxn93YHqjZ1e1Cgf3VLXc40spkkBLoTU3t0x/fAKh5t7MQbGoGMmBMhHDmu3LnZufqlltlR2KjYiWjc+JgNg40FC2aM0jMO5ao1vlSUJw7/OBKIeeYgtom2U6IXIckrPX+2XI7XOG7B6Ga3zK9cgGBOogiIClPITYUjSmCkNLX/HINOceSPpoLoj8ISCmB8dG0gMJe0cFLKqcv9z8KNvdvMIoe3xa77MWsH+WlAdRswJCCqfWE6zz0Aj6B649tSX7S/U8L1ScQ+3c+y0Z6N5iBbv3CF6vuWmwMU=U";
 
@@ -79,8 +86,8 @@ const items = [
  
 (async () => {
     const nearConnection = await connect(connectionConfig);
-    const marketplaceAccount = await nearConnection.account("m21.hugebobadev.testnet");
-    const masterAccount = "m21.hugebobadev.testnet"
+    const marketplaceAccount = await nearConnection.account("m22.hugebobadev.testnet");
+    const masterAccount = "m22.hugebobadev.testnet"
 
     //Deploy && Setup Contract
 
@@ -115,9 +122,8 @@ const items = [
         console.log("[TEMP] Marketplace insert of item : ", items[i].name);
     }
 
-    console.log("\n[INFO] Items has been uploaded! \n");
+    console.log("\n[INFO] Items has been uploaded!");
     console.log("\n[INFO] Performing validations of smart contract");
-
     console.log("\n[INFO] Executing the purchase transaction!")
 
     await marketplaceContract.confirm_purchase({ 
@@ -125,33 +131,83 @@ const items = [
             "encoded_message" : encoded_message,
             "items": [
                 [
-                "fd324893-1880-4a85-afd0-e5be598aac7c_250_Espresso",
+                "fd324893-1880-4a85-afd0-e5be598aac7c_250_Filter",
                 1
                 ]
             ]
         },  
         gas: "250000000000000",
-        amount: nearAPI.utils.format.parseNearAmount("22.5")      
+        amount: nearAPI.utils.format.parseNearAmount("25.5")      
     })
-
-    // console.log("\n[INFO] Checking if the transaction was successful!");
-    let pending_order = await marketplaceContract.view_pending_orders();
-    // console.log("Pending order: ", pending_order);
-    let pending_order_id = pending_order[0][0]
-    console.log("\n[INFO] Checking if the order fulfillment was successful!");
-
-    await marketplaceContract.confirm_order({ 
+    
+    await marketplaceContract.confirm_purchase({ 
         args : {
-            "order_id" : pending_order_id,
-            "order_filled" : true,
+            "encoded_message" : encoded_message,
+            "items": [
+                [
+                "fd324893-1880-4a85-afd0-e5be598aac7c_500_Filter",
+                1
+                ]
+            ]
         },  
-        gas: "250000000000000", 
+        gas: "250000000000000",
+        amount: nearAPI.utils.format.parseNearAmount("40.5")      
     })
 
-    let pending_order_updated = await marketplaceContract.view_pending_orders();
-    console.log("\n[INFO] Pending order updated Status: ", pending_order_updated)
-    let fulfilled_order = await marketplaceContract.view_fulfilled_orders()
-    console.log("\n[INFO] Fulfilled order updated Status: ", fulfilled_order.length, fulfilled_order)
 
+    console.log("\n[INFO] Checking if the transaction was successful!");
+    let pending_orders = await marketplaceContract.view_pending_orders();
+
+    console.log("Pending orders: ", pending_orders);
+
+    for(let i = 0; i < 2; i++){
+        let pending_orders = await marketplaceContract.view_pending_orders();
+        let pending_order_id = pending_orders[pending_orders.length-1][0]
+        console.log("\n[INFO] Checking if the order fulfillment was successful!");
+    
+        await marketplaceContract.confirm_order({ 
+            args : {
+                "order_id" : pending_order_id,
+                "order_filled" : true,
+            },  
+            gas: "250000000000000", 
+        })
+
+        console.log("[TEMP] Confirmation of order with ID : ", pending_order_id);
+    };
+
+    let fulfilled_order = await marketplaceContract.view_fulfilled_orders()
+    console.log("\n[INFO] Fulfilled order updated Status: ", fulfilled_order)
+    let export_fillfilled_order = []
+
+    for (let i = 0; i < fulfilled_order.length; i++) {
+        let r = {
+            "order_id" : fulfilled_order[i][0],
+            "account_id" : fulfilled_order[i][1]["account_id"],
+            "event" : fulfilled_order[i][1]["event"],
+            "message" : fulfilled_order[i][1]["message"],
+            "items" : fulfilled_order[i][1]["items"],
+            "checkout_cost": fulfilled_order_order[i][1]["checkout_cost"],
+        };
+        export_fillfilled_order.push(r);
+    };
+
+    const json2csvParser = new Parser();
+    const csv = json2csvParser.parse(export_fillfilled_order);
+
+    const fileName = 'output.csv';
+
+    // Write the CSV data to a file
+    fs.writeFile(fileName, csv, (err) => {
+    if (err) {
+        console.error('Error writing to CSV file:', err);
+    } else {
+        console.log('CSV file saved as', fileName);
+    }
+    });
+
+    // console.log("\n[INFO] Fulfilled order updated Status: ", )
+
+    
     
 })();
