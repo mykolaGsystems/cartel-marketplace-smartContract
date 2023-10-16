@@ -88,6 +88,7 @@ pub trait PriceChecker {
     fn get_asset(&self, asset_id: AssetId) -> Option<Asset>;
 }
 
+
 // Define the default, which automatically initializes the contract
 impl Default for Contract{
     fn default() -> Self {
