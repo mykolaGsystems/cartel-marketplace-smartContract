@@ -25,7 +25,7 @@ use near_sdk::{log, env, ext_contract, Gas, near_bindgen,
 const ONE_NEAR: u128 = 1_000_000_000_000_000_000_000_000;
 const MINIMUM_ORDER: Balance = 1_000_000_000_000_000_000_000_000;
 pub const XCC_GAS: Gas = Gas(20_000_000_000_000);
-const ASSET_ID_REF: &str = "wrap.testnet";
+const ASSET_ID_REF: &str = "wrap.near";
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, BorshStorageKey)]
@@ -87,6 +87,7 @@ struct BasketItem {
 pub trait PriceChecker {
     fn get_asset(&self, asset_id: AssetId) -> Option<Asset>;
 }
+
 
 // Define the default, which automatically initializes the contract
 impl Default for Contract{
@@ -151,7 +152,7 @@ impl Contract {
 
         self.user_basket = Some(basket);
 
-        let call_contract: AccountId = "priceoracle.testnet".parse().unwrap();
+        let call_contract: AccountId = "priceoracle.near".parse().unwrap();
         let deposit_amount: u128 = env::attached_deposit();
 
         log!("[INFO] Making cross-contract call!");
