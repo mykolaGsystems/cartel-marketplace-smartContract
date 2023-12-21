@@ -1,0 +1,32 @@
+"Id","Order_id","Account_id","FirstName","LastName","MobileNumber","Email","AddressLine1","AddressLine2","City","State","Postcode","Country","Event","Items","Checkout_cost"
+"0","elcafecartel.near_0","elcafecartel.near","Mykola","Gavrysh","+4407856179582","nick_01@gmail.com","Cosmos Student Apartments RoomA1004","2 Moore Street","Sheffield","South Yorkshine","S3 7HZ","UK","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",19.218868019479444
+"1","elcafecartel.near_1","elcafecartel.near","Test","Test","13131","Test@gmail.com","Test","Test","Test","Test","Test","Test","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",19.24773270743159
+"3","escobarindo.near_3","escobarindo.near","Aesco","bar","087484682742","aescobar.co@gmail.com","Bahams","","09873","Indonesia","19393","Indonesia","confirmed_purchase","[[""fd324893-1880-4a85-afd0-e5be598aac7c_250_Filter"",1]]",29.25927614374345
+"2","bennyblanco.near_2","bennyblanco.near","Benny","Brown","07718045822","benny@web3wise.io","3 Drayton Lane","Drayton Bassett","Tamworth","Staffordshire","B783UA","GB","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",30.37578102465568
+"7","elcafecartel.near_7","elcafecartel.near","Test","Test","111","Test@gmail.com","Test","Test","Test","Test","Test","Test","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",25.464868176122152
+"6","escobarindo.near_6","escobarindo.near","aesco","bar","89524116854","aescobar.co@gmail.com","pakuwon street","","Jakarta","","11710","indonesia","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",25.558808969820934
+"4","elcafecartel.near_4","elcafecartel.near","Test","Test","1111","Test@gmal.com","Test","Test","Test","Test","Test","Test","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",30.369286428897297
+"8","escobarindo.near_8","escobarindo.near","aes","ci","089524116854","aescobar.co@gmail.com","bhebrfienfer","erferfoimofr","Jakarta","","11710","Indonesia","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",25.37955312614712
+"9","bobadev.near_9","bobadev.near","Aleksandrs","Vinarskis","0041799394483","alex.vinarskis@gmail.com","Luegislandstrasse 61","","Zurich","","8051","Switzerlnad","confirmed_purchase","[[""fd324893-1880-4a85-afd0-e5be598aac7c_250_Filter"",1]]",22.89157408353119
+"5","escobarindo.near_5","escobarindo.near","aesco","bar","23884829892345","aescobar.co@gmail.com","njfierner","","rf3f","","22040","Indonesia","confirmed_purchase","[[""fd324893-1880-4a85-afd0-e5be598aac7c_250_Filter"",1]]",29.243514954517586
+"10","bobadev.near_10","bobadev.near","Alex","hhh","898989","hj@gmail.com","h","h","h","h","h","h","confirmed_purchase","[[""fd324893-1880-4a85-afd0-e5be598aac7c_250_Filter"",1]]",22.89374277933094
+"11","escobarindo.near_11","escobarindo.near","aescobar","aes","089524116854","mwijaya57@gmail.com","peacocj 1 no we","","jakarta","","11710","Indonesia","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",25.877114682887765
+"12","monza.near_12","monza.near","Sue","Harmon","4145310241","whosster@wi.rr.com","13706 W Meadow Ln","","New Berlin","Wisconsin","53151","USA","confirmed_purchase","[[""fd324893-1880-4a85-afd0-e5be598aac7c_250_Filter"",1],[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",47.88331288229813
+"13","travbori.near_13","travbori.near","Arturo","Torres","4124011575","torr.art@gmail.com","3501 Keswick dr","","Chamblee","GA","30341","US","confirmed_purchase","[[""fd324893-1880-4a85-afd0-e5be598aac7c_1000_Filter"",1]]",72.80094395447026
+"14","jarednotjerry.near_14","jarednotjerry.near","Jared","Thompson","3104098888","jared@readylayer.one","346 E 81ST ST, apt 4A","","Manhattan","New York","10028","US","confirmed_purchase","[[""fd324893-1880-4a85-afd0-e5be598aac7c_250_Filter"",1],[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",47.95348062131016
+"15","elcafecartel.near_15","elcafecartel.near","TEST","TEST","12131","TEST@gmail.com","TEST","TEST","TEST","TEST","TEST","TEST","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",19.98715965464195
+"16","nearagi.near_16","nearagi.near","Cameron","Dennis","3056610670","cameron@banyan.gg","2264 Bowdoin St","","Palo Alto","CA","94306","Santa Clara","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_250_Wholebean"",1]]",28.377533151137946
+"18","odins_eyehole.near_18","odins_eyehole.near","Scott","Canning","2036877679","odinisnear@gmail.com","58 Metropolitan Ave","Apt 3H","Brooklyn","NY ","11249","USA","confirmed_purchase","[[""fd324893-1880-4a85-afd0-e5be598aac7c_500_Espresso"",1],[""7c07cbaf-f31d-4b47-93c2-f690af44c474_500_Wholebean"",1]]",74.80675476950495
+"17","ianbell.near_17","ianbell.near","Ian","Bell","2036877679","ianbell1100@gmail.com","213 Buttonball Lane ","","Glastonbury ","CT","06033","USA","confirmed_purchase","[[""7c07cbaf-f31d-4b47-93c2-f690af44c474_1000_Wholebean"",1],[""fd324893-1880-4a85-afd0-e5be598aac7c_250_Espresso"",1]]",93.08151908919908
+
+
+Standing Caffee for the guy: 26eaf28ac789e822e66bed152f3af6ee6d38d0b9bc647bbb49b4ba3be7893d40
+
+near view staking.elcafecartel.near est_reward '{"account_id" : "26eaf28ac789e822e66bed152f3af6ee6d38d0b9bc647bbb49b4ba3be7893d40", "token_id" : "406", "gen" : 1}' -> 2377473623202428
+
+View call: staking.elcafecartel.near.est_reward({"account_id" : "26eaf28ac789e822e66bed152f3af6ee6d38d0b9bc647bbb49b4ba3be7893d40", "token_id" : "4081", "gen" : 3})
+253843457128800
+
+View call: staking.elcafecartel.near.est_reward({"account_id" : "26eaf28ac789e822e66bed152f3af6ee6d38d0b9bc647bbb49b4ba3be7893d40", "token_id" : "7032", "gen" : 3})
+253841095478600
+
